@@ -2,7 +2,7 @@ const express = require("express");
 const axios = require("axios");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -40,7 +40,7 @@ app.get("/api/classify", async (req, res) => {
     const { gender, probability, count } = response.data;
 
     if (gender === null || count === 0) {
-      return res.status(200).json({
+      return res.status(422).json({
         status: "error",
         message: "No prediction available for the provided name"
       });
