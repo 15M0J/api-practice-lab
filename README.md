@@ -1,15 +1,40 @@
 # api-practice-lab
 
-Stage 1 backend assessment solution for Backend Wizards. The API accepts a name, calls Genderize, Agify, and Nationalize, stores the classified result in a local JSON datastore, and exposes CRUD-style profile endpoints.
+Stage 1 backend assessment solution for Backend Wizards. The API accepts a name, calls Genderize, Agify, and Nationalize, stores the classified result in PostgreSQL, and exposes the required profile endpoints.
 
-## Tech stack
+## Stack
 
 - Node.js 22
 - Express
 - Axios
-- File-based JSON persistence
+- PostgreSQL via `pg`
+- Vercel-compatible serverless entrypoint
+
+## Project structure
+
+- `app.js`: shared Express app and route logic
+- `db.js`: PostgreSQL connection, schema bootstrap, and queries
+- `server.js`: local development launcher
+- `api/index.js`: Vercel entrypoint
+- `vercel.json`: routes all requests to the API handler
+
+## Environment
+
+Required:
+
+- `DATABASE_URL`
+
+Optional:
+
+- `PORT` for local runs
+
+If your provider gives `POSTGRES_URL` instead of `DATABASE_URL`, the app accepts that too.
 
 ## Run locally
+
+1. Create a PostgreSQL database.
+2. Add a `.env` file or set `DATABASE_URL`.
+3. Install dependencies and start the server:
 
 ```bash
 npm install
@@ -18,16 +43,12 @@ npm start
 
 The server runs on `http://localhost:3000` by default.
 
-## Environment
+## Database model
 
-- `PORT`: optional server port override
-
-## Data model
-
-Profiles are stored in [`data/profiles.json`](./data/profiles.json) with these fields:
+The app creates a `profiles` table automatically on first request with these fields:
 
 - `id` (UUID v7)
-- `name`
+- `name` (normalized lowercase and unique)
 - `gender`
 - `gender_probability`
 - `sample_size`
@@ -35,15 +56,13 @@ Profiles are stored in [`data/profiles.json`](./data/profiles.json) with these f
 - `age_group`
 - `country_id`
 - `country_probability`
-- `created_at` (UTC ISO 8601)
-
-Names are normalized to lowercase before lookup and storage, so `Ella` and `ella` map to the same profile.
+- `created_at` (UTC ISO 8601 when returned)
 
 ## API
 
 ### `POST /api/profiles`
 
-Creates a profile from a request body such as:
+Request body:
 
 ```json
 {
@@ -52,7 +71,7 @@ Creates a profile from a request body such as:
 ```
 
 - Returns `201 Created` with the full stored profile on first creation.
-- Returns `200 OK` with `message: "Profile already exists"` if the normalized name is already stored.
+- Returns `200 OK` with `message: "Profile already exists"` if the normalized name already exists.
 
 ### `GET /api/profiles/:id`
 
@@ -95,13 +114,32 @@ Implemented cases:
 - `422 Unprocessable Entity`: invalid input type
 - `404 Not Found`: profile not found
 - `502 Bad Gateway`: invalid upstream API response
-- `500 Internal Server Error`: unexpected server failure
+- `500 Internal Server Error`: unexpected server or database failure
 
 Upstream validation messages are:
 
 - `Genderize returned an invalid response`
 - `Agify returned an invalid response`
 - `Nationalize returned an invalid response`
+
+## Vercel deployment
+
+1. Create a hosted Postgres database.
+2. Add `DATABASE_URL` in your Vercel project environment variables.
+3. Import or link the repo to Vercel.
+4. Deploy.
+
+Use the deployed domain as your API base URL, for example:
+
+```txt
+https://your-project-name.vercel.app
+```
+
+The grading endpoints will then be:
+
+```txt
+https://your-project-name.vercel.app/api/profiles
+```
 
 ## Notes
 
